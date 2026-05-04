@@ -28,7 +28,8 @@ app.use(
 app.use(cors({
   origin: [
     'http://localhost:5173',  
-    'https://minutes-api.onrender.com'  
+    'http://localhost:3001',
+    process.env.CORS_ORIGIN || 'https://incandescent-profiterole-330965.netlify.app/'
   ]
 }));
 app.use(express.json());
