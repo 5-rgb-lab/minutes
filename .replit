@@ -1,0 +1,42 @@
+modules = ["nodejs-24", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[nix]
+channel = "stable-25_05"
+
+[[ports]]
+localPort = 8080
+externalPort = 80
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
+localPort = 22199
+externalPort = 3000
+
+[userenv]
+
+[userenv.shared]
+FIREBASE_PROJECT_ID = "minutes-cdc83"
+FIREBASE_CLIENT_EMAIL = "firebase-adminsdk-fbsvc@minutes-cdc83.iam.gserviceaccount.com"
+FIREBASE_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDD/Ia0DLnEEFBX\nOoiBdEniCMokCuiAk7eSesJZFsKn2rEfCZz3HC2qFp0VwZ3vdF8BkrX0dhPTQ+ji\nlb+yq3dKzyhu1MZzPG1ePwN9IXMUiAED5V5Pkt1Mc0pr2za3YOeA5i1oYz0H4x/Z\n7M+iyrTh6Rd2ExHnmnBUKCG/vZGh9SGK7LiXTwgVwBCDH3m9eKD4RD/q/MOPVs8Q\ngihl4vl38rvKR3fbAtnWKGiUig1V9P02nGV+4RKTkwp08b6gCvp+gHiFJ0flsqPh\njiZ1vQ2EWc3ooJrVQ3J2cvc5DilcFLESA4Qq164H0JraL8usqiH6qATJYpeRVwKM\nekaoaux/AgMBAAECggEACP7OL/VlkVouVdKZ8VclDPraTE0z3rLo+hAoW25wAMRI\n3OPUEIN6lRP0ocsBNLxin+/b6hyBTHERf1TgN5MnJofbkzqw4Rkk6+54eoXOgmK7\nqTId4gkbnyarg8fL+x63gXMPIntrkbEbBSWZYh9rrfLE4OZ/K+IqxbIR2nsY9BX3\nnf1UcZPt1ZS8/CMmlAEpXxxzU+ho/KWDl4aXJBD+T+n6nE+t6DK/Pk7YTjf7itD+\nwN0DiRsR02TYiOIs7NjUme2UwIOBf6E0p4eHO0+EiRtn+9heN2B/UKDa9RaUW4uo\nTtSwFZ1kw5aciUwuERrzMsKFhnvLmly3bmLw4OGyAQKBgQDrRQ8ErN3ohugNBei6\nu6wFS+pxJSAK/hZzudEFzWJcub6zZeqSCbcnerUdt1jjPzea8KhJQ6WjccDpVz1T\nGpJaiknNm65E7jhFiCIN1c13BdSdugAbefW7fL2IgfNSfIYHnNw19ECBI8rDUEbu\ny+XORoZC+QH3+GOPecHTBugUjQKBgQDVQVwiTn7KUrXAsPJuDsHwE1g9Ck9eQ8MP\nVdNKijFuXi2wtTB0IDf/4mvry3ckZ1/5Q5cj4XqA9wpOPtX33CFaRbrddQZ1FTSO\noI4+gsQGyA6glhYb+V7Y7BPD/yTt12LCb/ZgZnb5D/2pP6LKC5LwfonnLNxcWZrJ\nRvG0qtLwOwKBgQCB4boMxrIrMG7i4aQ9kmXA9swScoBiESur76UpIt1ue0yAFX+N\n57cpIGDkatezfK7h5oHBEItc0+u/5d2BB2ZMfZOI4q0ueKSwHhtOr/2h+6IJASoW\nARpbyt2HgtYlb4E+qqYXUyRZJr1FXggKxJ21ZtGwH2+qyYGNL5aFPYbZ8QKBgQC4\nR1qOarY1r3NPp5hWcno0MwM0/AvJsVSFk+yZpQFCFi/1Wx0bvBuoCsinYZL66jmM\n9FNOtjFd8Bv/sVzEanyHvWnUpKOH2WMpPKSub+Fk2suJCSjh04Oaf6Y03+3ReSXm\nT0nf06tLXf4cmtjZL1cyaqZQFfv18ZhIBf4n2NWesQKBgBaOTvwmZaPpcZJX73Mw\nqjU5YGQs4vpXaGhKXcSYb5Lfm0z3s83h70QCiVLE1dQHHPzspsXfKRf++vMvhRtG\nN5f40m/dDA7q+du1xttDYnSP9SXqytHnZpqvE5NiwymVrL2CGfuLxpJOjrsMwZZ7\n5bzVRjuR08y+HOdxBng7h9ex\n-----END PRIVATE KEY-----\n'

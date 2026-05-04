@@ -1,0 +1,378 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: meetings
+    description: Meeting minutes operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /meetings:
+    get:
+      operationId: listMeetings
+      tags: [meetings]
+      summary: List all meetings
+      description: Returns all meetings with optional search and tag filtering
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Search by title or participant name
+        - name: tag
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by tag
+      responses:
+        "200":
+          description: List of meetings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Meeting"
+    post:
+      operationId: createMeeting
+      tags: [meetings]
+      summary: Create a meeting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMeetingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meeting"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /meetings/{id}:
+    get:
+      operationId: getMeeting
+      tags: [meetings]
+      summary: Get a meeting by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Meeting
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meeting"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateMeeting
+      tags: [meetings]
+      summary: Update a meeting
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeetingInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meeting"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteMeeting
+      tags: [meetings]
+      summary: Delete a meeting
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /meetings/stats/summary:
+    get:
+      operationId: getMeetingsSummary
+      tags: [meetings]
+      summary: Get dashboard summary
+      description: Aggregated stats for the dashboard view
+      responses:
+        "200":
+          description: Summary stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeetingsSummary"
+
+  /meetings/stats/recent:
+    get:
+      operationId: getRecentMeetings
+      tags: [meetings]
+      summary: Get recent meetings
+      description: Most recently updated meetings (limit 5)
+      responses:
+        "200":
+          description: Recent meetings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Meeting"
+
+  /meetings/stats/tags:
+    get:
+      operationId: getTagBreakdown
+      tags: [meetings]
+      summary: Get tag breakdown
+      description: All tags with their meeting counts
+      responses:
+        "200":
+          description: Tag breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TagCount"
+
+  /meetings/stats/upcoming:
+    get:
+      operationId: getUpcomingMeetings
+      tags: [meetings]
+      summary: Get upcoming meetings
+      description: Meetings with a date >= today, ordered by date asc
+      responses:
+        "200":
+          description: Upcoming meetings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Meeting"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Meeting:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        meetingDate:
+          type: string
+          description: ISO date (YYYY-MM-DD)
+        meetingTime:
+          type: string
+          description: Time (HH:MM)
+        location:
+          type: ["string", "null"]
+        participants:
+          type: array
+          items:
+            type: string
+        agenda:
+          type: string
+        notes:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          description: One of "scheduled", "completed", "cancelled"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - meetingDate
+        - meetingTime
+        - location
+        - participants
+        - agenda
+        - notes
+        - tags
+        - status
+        - createdAt
+        - updatedAt
+
+    CreateMeetingInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        meetingDate:
+          type: string
+        meetingTime:
+          type: string
+        location:
+          type: ["string", "null"]
+        participants:
+          type: array
+          items:
+            type: string
+        agenda:
+          type: string
+        notes:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+      required:
+        - title
+        - meetingDate
+        - meetingTime
+        - participants
+        - agenda
+        - notes
+
+    UpdateMeetingInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        meetingDate:
+          type: string
+        meetingTime:
+          type: string
+        location:
+          type: ["string", "null"]
+        participants:
+          type: array
+          items:
+            type: string
+        agenda:
+          type: string
+        notes:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+
+    MeetingsSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        scheduled:
+          type: integer
+        completed:
+          type: integer
+        cancelled:
+          type: integer
+        upcomingCount:
+          type: integer
+        uniqueParticipants:
+          type: integer
+      required:
+        - total
+        - scheduled
+        - completed
+        - cancelled
+        - upcomingCount
+        - uniqueParticipants
+
+    TagCount:
+      type: object
+      properties:
+        tag:
+          type: string
+        count:
+          type: integer
+      required:
+        - tag
+        - count
