@@ -29,7 +29,7 @@ app.use(cors({
   origin: [
     'http://localhost:5173',  
     'http://localhost:3001',
-    process.env.CORS_ORIGIN || 'https://incandescent-profiterole-330965.netlify.app/'
+    process.env.CORS_ORIGIN || 'https://incandescent-profiterole-330965.netlify.app'
   ]
 }));
 app.use(express.json());
