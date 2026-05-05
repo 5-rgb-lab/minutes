@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 
 const AUTH_TOKEN_STORAGE_KEY = "minute-manager-auth-token";
+const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 
 export type AuthUser = {
   email: string;
@@ -31,6 +32,11 @@ function setStoredToken(token: string | null) {
   }
 }
 
+function buildApiUrl(path: string) {
+  const normalizedBase = API_BASE.replace(/\/+$/, "");
+  return normalizedBase ? `${normalizedBase}/api${path}` : `/api${path}`;
+}
+
 async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getStoredToken();
   const headers = new Headers(init.headers ?? undefined);
@@ -44,13 +50,22 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`/api${path}`, {
+  const url = buildApiUrl(path);
+  const response = await fetch(url, {
     ...init,
     headers,
   });
 
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let data: any = null;
+
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(`Expected JSON response from ${url}, got: ${text.slice(0, 200)}`);
+    }
+  }
 
   if (!response.ok) {
     throw new Error((data && (data.error || data.message)) ?? response.statusText);
