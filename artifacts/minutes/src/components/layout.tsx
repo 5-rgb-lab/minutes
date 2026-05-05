@@ -1,13 +1,15 @@
 import { Link, useLocation } from "wouter";
-import { Calendar, LayoutDashboard, Menu, X, Plus, Sun, Moon } from "lucide-react";
+import { Calendar, LayoutDashboard, Menu, X, Plus, Sun, Moon, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/lib/theme";
+import { useAuth } from "@/lib/auth";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, toggle } = useTheme();
+  const { user, logout } = useAuth();
 
   const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -82,7 +84,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* New meeting button */}
-        <div className="p-4">
+        <div className="p-4 space-y-3">
           <Button
             className="w-full justify-start shadow-sm"
             variant="outline"
@@ -91,6 +93,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Plus className="mr-2 h-4 w-4" />
             New Meeting
           </Button>
+          {user ? (
+            <div className="rounded-2xl border p-3 bg-secondary/50 text-sm text-muted-foreground">
+              <div className="font-medium text-foreground truncate">{user.email}</div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-2 w-full justify-start"
+                onClick={logout}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign out
+              </Button>
+            </div>
+          ) : null}
         </div>
       </aside>
 

@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { FieldValue } from "firebase-admin/firestore";
 import { db, meetingsCol } from "../lib/firebase";
+import { requireAuth } from "../lib/auth";
 import {
   ListMeetingsQueryParams,
   ListMeetingsResponse,
@@ -19,6 +20,7 @@ import {
 import type { DocumentSnapshot } from "firebase-admin/firestore";
 
 const router: IRouter = Router();
+router.use(requireAuth);
 
 const COUNTER_DOC = db.collection("_meta").doc("idCounter");
 
@@ -58,6 +60,7 @@ function docToMeeting(snap: DocumentSnapshot) {
 }
 
 router.get("/meetings", async (req, res): Promise<void> => {
+  const userId = req.user?.id;
   const parsed = ListMeetingsQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -65,7 +68,7 @@ router.get("/meetings", async (req, res): Promise<void> => {
   }
 
   const { search, tag } = parsed.data;
-  const snap = await meetingsCol.orderBy("meetingDate", "desc").get();
+  const snap = await meetingsCol.where("createdBy", "==", userId).get();
   let meetings = snap.docs.map(docToMeeting);
 
   if (search && search.trim().length > 0) {
@@ -81,6 +84,8 @@ router.get("/meetings", async (req, res): Promise<void> => {
   if (tag && tag.trim().length > 0) {
     meetings = meetings.filter((m) => m.tags.includes(tag.trim()));
   }
+
+  meetings.sort((a, b) => b.meetingDate.localeCompare(a.meetingDate));
 
   res.json(ListMeetingsResponse.parse(meetings));
 });
@@ -104,6 +109,7 @@ router.post("/meetings", async (req, res): Promise<void> => {
     notes: parsed.data.notes ?? "",
     tags: parsed.data.tags ?? [],
     status: parsed.data.status ?? "scheduled",
+    createdBy: req.user?.id,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   };
@@ -121,8 +127,9 @@ router.post("/meetings", async (req, res): Promise<void> => {
   res.status(201).json(GetMeetingResponse.parse(created));
 });
 
-router.get("/meetings/stats/summary", async (_req, res): Promise<void> => {
-  const snap = await meetingsCol.get();
+router.get("/meetings/stats/summary", async (req, res): Promise<void> => {
+  const userId = req.user?.id;
+  const snap = await meetingsCol.where("createdBy", "==", userId).get();
   const all = snap.docs.map(docToMeeting);
   const today = new Date().toISOString().slice(0, 10);
 
@@ -138,18 +145,17 @@ router.get("/meetings/stats/summary", async (_req, res): Promise<void> => {
   res.json(GetMeetingsSummaryResponse.parse(summary));
 });
 
-router.get("/meetings/stats/recent", async (_req, res): Promise<void> => {
-  const snap = await meetingsCol
-    .orderBy("updatedAt", "desc")
-    .limit(5)
-    .get();
-
+router.get("/meetings/stats/recent", async (req, res): Promise<void> => {
+  const userId = req.user?.id;
+  const snap = await meetingsCol.where("createdBy", "==", userId).get();
   const rows = snap.docs.map(docToMeeting);
-  res.json(GetRecentMeetingsResponse.parse(rows));
+  rows.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  res.json(GetRecentMeetingsResponse.parse(rows.slice(0, 5)));
 });
 
-router.get("/meetings/stats/tags", async (_req, res): Promise<void> => {
-  const snap = await meetingsCol.get();
+router.get("/meetings/stats/tags", async (req, res): Promise<void> => {
+  const userId = req.user?.id;
+  const snap = await meetingsCol.where("createdBy", "==", userId).get();
   const all = snap.docs.map(docToMeeting);
   const counts = new Map<string, number>();
   for (const m of all) {
@@ -164,9 +170,10 @@ router.get("/meetings/stats/tags", async (_req, res): Promise<void> => {
   res.json(GetTagBreakdownResponse.parse(result));
 });
 
-router.get("/meetings/stats/upcoming", async (_req, res): Promise<void> => {
+router.get("/meetings/stats/upcoming", async (req, res): Promise<void> => {
+  const userId = req.user?.id;
   const today = new Date().toISOString().slice(0, 10);
-  const snap = await meetingsCol.get();
+  const snap = await meetingsCol.where("createdBy", "==", userId).get();
   const rows = snap.docs
     .map(docToMeeting)
     .filter((m) => m.meetingDate >= today)
@@ -184,6 +191,12 @@ router.get("/meetings/:id", async (req, res): Promise<void> => {
 
   const snap = await meetingsCol.doc(String(params.data.id)).get();
   if (!snap.exists) {
+    res.status(404).json({ error: "Meeting not found" });
+    return;
+  }
+
+  const data = snap.data();
+  if (!data || data["createdBy"] !== req.user?.id) {
     res.status(404).json({ error: "Meeting not found" });
     return;
   }
@@ -207,6 +220,12 @@ router.patch("/meetings/:id", async (req, res): Promise<void> => {
   const docRef = meetingsCol.doc(String(params.data.id));
   const existing = await docRef.get();
   if (!existing.exists) {
+    res.status(404).json({ error: "Meeting not found" });
+    return;
+  }
+
+  const existingData = existing.data();
+  if (!existingData || existingData["createdBy"] !== req.user?.id) {
     res.status(404).json({ error: "Meeting not found" });
     return;
   }
@@ -240,6 +259,12 @@ router.delete("/meetings/:id", async (req, res): Promise<void> => {
   const docRef = meetingsCol.doc(String(params.data.id));
   const existing = await docRef.get();
   if (!existing.exists) {
+    res.status(404).json({ error: "Meeting not found" });
+    return;
+  }
+
+  const existingData = existing.data();
+  if (!existingData || existingData["createdBy"] !== req.user?.id) {
     res.status(404).json({ error: "Meeting not found" });
     return;
   }

@@ -13,17 +13,27 @@ interface ChipsInputProps {
 export function ChipsInput({ value, onChange, placeholder, className }: ChipsInputProps) {
   const [inputValue, setInputValue] = React.useState("");
 
+  const addTag = () => {
+    const newTag = inputValue.trim();
+    if (newTag && !value.includes(newTag)) {
+      onChange([...value, newTag]);
+    }
+    setInputValue("");
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
-      const newTag = inputValue.trim();
-      if (newTag && !value.includes(newTag)) {
-        onChange([...value, newTag]);
-      }
-      setInputValue("");
+      addTag();
     } else if (e.key === "Backspace" && inputValue === "" && value.length > 0) {
       e.preventDefault();
       onChange(value.slice(0, -1));
+    }
+  };
+
+  const handleBlur = () => {
+    if (inputValue.trim().length > 0) {
+      addTag();
     }
   };
 
@@ -51,6 +61,7 @@ export function ChipsInput({ value, onChange, placeholder, className }: ChipsInp
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
         placeholder={value.length === 0 ? placeholder : ""}
         className="flex-1 outline-none bg-transparent min-w-[120px] text-sm placeholder:text-muted-foreground"
       />

@@ -20,3 +20,5 @@ if (!getApps().length) {
 
 export const db = getFirestore();
 export const meetingsCol = db.collection("meetings");
+export const usersCol = db.collection("users");
+export const sessionsCol = db.collection("sessions");
